@@ -1,0 +1,8 @@
+.cache
+build
+protocols
+*.o
+relay-pc
+Makefile
+.qmake.stash
+moc_*

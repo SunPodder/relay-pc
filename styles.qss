@@ -1,0 +1,122 @@
+/* Global styles for Relay PC */
+
+* {
+    font-family: "Segoe UI", "San Francisco", "Arial", sans-serif;
+}
+
+/* Notification Panel */
+NotificationPanel {
+    background-color: rgba(30, 30, 30, 0.95);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Title Label */
+QLabel#titleLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+/* Notification Cards */
+NotificationCard {
+    background-color: rgba(45, 45, 45, 0.9);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 4px;
+}
+
+NotificationCard:hover {
+    background-color: rgba(60, 60, 60, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Scroll Area */
+QScrollArea {
+    background-color: transparent;
+    border: none;
+}
+
+QScrollBar:vertical {
+    background-color: rgba(255, 255, 255, 0.1);
+    width: 8px;
+    border-radius: 4px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: transparent;
+}
+
+/* Remove Button */
+QPushButton#removeButton {
+    background-color: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 10px;
+    min-width: 20px;
+    max-width: 20px;
+    min-height: 20px;
+    max-height: 20px;
+}
+
+QPushButton#removeButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+QPushButton#removeButton:pressed {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Text Labels */
+QLabel#appNameLabel {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QLabel#timeLabel {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+}
+
+QLabel#titleLabel {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+QLabel#bodyLabel {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+QLabel#emptyLabel {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    padding: 40px;
+}

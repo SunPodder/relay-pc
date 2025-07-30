@@ -25,7 +25,7 @@ make -j$(nproc)
 if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Build successful!"
-    echo "Run './relay-pc' or './run.sh' to start the application."
+    echo "Run './relay-pc' to start the application."
 else
     echo ""
     echo "❌ Build failed!"

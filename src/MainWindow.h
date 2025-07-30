@@ -9,6 +9,7 @@
 class NotificationPanel;
 class NotificationManager;
 class AnimationManager;
+class NotificationPopupManager;
 
 class MainWindow : public QMainWindow
 {
@@ -33,6 +34,7 @@ private:
     NotificationPanel* m_notificationPanel;
     NotificationManager* m_notificationManager;
     AnimationManager* m_animationManager;
+    NotificationPopupManager* m_popupManager;
     
     QSystemTrayIcon* m_trayIcon;
     QMenu* m_trayMenu;

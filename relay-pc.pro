@@ -23,7 +23,9 @@ SOURCES += \
     src/NotificationCard.cpp \
     src/NotificationManager.cpp \
     src/AnimationManager.cpp \
-    src/NotificationData.cpp
+    src/NotificationData.cpp \
+    src/NotificationPopup.cpp \
+    src/NotificationPopupManager.cpp
 
 HEADERS += \
     src/MainWindow.h \
@@ -31,7 +33,9 @@ HEADERS += \
     src/NotificationCard.h \
     src/NotificationManager.h \
     src/AnimationManager.h \
-    src/NotificationData.h
+    src/NotificationData.h \
+    src/NotificationPopup.h \
+    src/NotificationPopupManager.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

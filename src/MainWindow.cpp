@@ -2,6 +2,7 @@
 #include "NotificationPanel.h"
 #include "NotificationManager.h"
 #include "AnimationManager.h"
+#include "NotificationPopupManager.h"
 
 #include <QApplication>
 #include <QSystemTrayIcon>
@@ -17,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_notificationPanel(nullptr)
     , m_notificationManager(nullptr)
     , m_animationManager(nullptr)
+    , m_popupManager(nullptr)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
     , m_toggleAction(nullptr)
@@ -49,9 +51,16 @@ void MainWindow::setupUI()
     // Create animation manager
     m_animationManager = new AnimationManager(m_notificationPanel, this);
     
+    // Create popup manager
+    m_popupManager = new NotificationPopupManager(this);
+    
     // Connect signals
     connect(m_notificationManager, &NotificationManager::notificationReceived,
             m_notificationPanel, &NotificationPanel::addNotification);
+    
+    // Connect popup manager to show popups for new notifications
+    connect(m_notificationManager, &NotificationManager::notificationReceived,
+            m_popupManager, &NotificationPopupManager::showNotificationPopup);
     
     // Add some dummy notifications for testing
     m_notificationManager->addDummyNotifications();

@@ -6,6 +6,8 @@
 #include <QTimer>
 #include "NotificationData.h"
 
+class NotificationClient;
+
 class NotificationManager : public QObject
 {
     Q_OBJECT
@@ -18,19 +20,32 @@ public:
     void removeNotification(int notificationId);
     void clearAllNotifications();
     
+    // Network connectivity
+    void startNetworkClient();
+    void stopNetworkClient();
+    bool isConnectedToServer() const;
+    
     // For testing purposes
     void addDummyNotifications();
 
 signals:
     void notificationReceived(const NotificationData& notification);
     void notificationRemoved(int notificationId);
+    void serverConnected();
+    void serverDisconnected();
+    void connectionError(const QString& error);
 
 private slots:
     void generateTestNotification();
+    void onClientNotificationReceived(const NotificationData& notification);
+    void onClientConnected();
+    void onClientDisconnected();
+    void onClientError(const QString& error);
 
 private:
     QList<NotificationData> m_notifications;
     QTimer* m_testTimer;
+    NotificationClient* m_client;
     int m_nextId;
     int m_testNotificationCount;
     

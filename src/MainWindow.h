@@ -24,6 +24,9 @@ private slots:
     void showPanel();
     void hidePanel();
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+    void onServerConnected();
+    void onServerDisconnected();
+    void onConnectionError(const QString& error);
 
 private:
     void setupUI();
@@ -41,6 +44,8 @@ private:
     
     QAction* m_toggleAction;
     QAction* m_quitAction;
+    QAction* m_connectAction;
+    QAction* m_statusAction;
     
     bool m_panelVisible;
 };

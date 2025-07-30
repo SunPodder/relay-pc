@@ -23,6 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_trayMenu(nullptr)
     , m_toggleAction(nullptr)
     , m_quitAction(nullptr)
+    , m_connectAction(nullptr)
+    , m_statusAction(nullptr)
     , m_panelVisible(false)
 {
     setupUI();
@@ -62,6 +64,17 @@ void MainWindow::setupUI()
     connect(m_notificationManager, &NotificationManager::notificationReceived,
             m_popupManager, &NotificationPopupManager::showNotificationPopup);
     
+    // Connect network status signals
+    connect(m_notificationManager, &NotificationManager::serverConnected,
+            this, &MainWindow::onServerConnected);
+    connect(m_notificationManager, &NotificationManager::serverDisconnected,
+            this, &MainWindow::onServerDisconnected);
+    connect(m_notificationManager, &NotificationManager::connectionError,
+            this, &MainWindow::onConnectionError);
+    
+    // Start network client
+    m_notificationManager->startNetworkClient();
+    
     // Add some dummy notifications for testing
     m_notificationManager->addDummyNotifications();
 }
@@ -76,6 +89,9 @@ void MainWindow::setupTrayIcon()
     
     m_trayMenu = new QMenu(this);
     m_trayMenu->addAction(m_toggleAction);
+    m_trayMenu->addSeparator();
+    m_trayMenu->addAction(m_statusAction);
+    m_trayMenu->addAction(m_connectAction);
     m_trayMenu->addSeparator();
     m_trayMenu->addAction(m_quitAction);
     
@@ -101,6 +117,14 @@ void MainWindow::createActions()
 {
     m_toggleAction = new QAction("Toggle Notifications", this);
     connect(m_toggleAction, &QAction::triggered, this, &MainWindow::togglePanel);
+    
+    m_statusAction = new QAction("Status: Searching...", this);
+    m_statusAction->setEnabled(false);
+    
+    m_connectAction = new QAction("Reconnect", this);
+    connect(m_connectAction, &QAction::triggered, [this]() {
+        m_notificationManager->startNetworkClient();
+    });
     
     m_quitAction = new QAction("Quit", this);
     connect(m_quitAction, &QAction::triggered, QApplication::instance(), &QApplication::quit);
@@ -144,5 +168,39 @@ void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
         break;
     default:
         break;
+    }
+}
+
+void MainWindow::onServerConnected()
+{
+    if (m_statusAction) {
+        m_statusAction->setText("Status: Connected");
+    }
+    if (m_connectAction) {
+        m_connectAction->setEnabled(false);
+    }
+    if (m_trayIcon) {
+        m_trayIcon->showMessage("Relay PC", "Connected to notification server", 
+                              QSystemTrayIcon::Information, 3000);
+    }
+}
+
+void MainWindow::onServerDisconnected()
+{
+    if (m_statusAction) {
+        m_statusAction->setText("Status: Disconnected");
+    }
+    if (m_connectAction) {
+        m_connectAction->setEnabled(true);
+    }
+}
+
+void MainWindow::onConnectionError(const QString& error)
+{
+    if (m_statusAction) {
+        m_statusAction->setText("Status: " + error);
+    }
+    if (m_connectAction) {
+        m_connectAction->setEnabled(true);
     }
 }

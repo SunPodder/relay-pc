@@ -1,4 +1,5 @@
 #include "NotificationManager.h"
+#include "NotificationClient.h"
 
 #include <QTimer>
 #include <QDateTime>
@@ -7,12 +8,24 @@
 NotificationManager::NotificationManager(QObject *parent)
     : QObject(parent)
     , m_testTimer(nullptr)
+    , m_client(nullptr)
     , m_nextId(1)
     , m_testNotificationCount(0)
 {
     // Initialize test timer for demo purposes
     m_testTimer = new QTimer(this);
     connect(m_testTimer, &QTimer::timeout, this, &NotificationManager::generateTestNotification);
+    
+    // Initialize network client
+    m_client = new NotificationClient(this);
+    connect(m_client, &NotificationClient::notificationReceived,
+            this, &NotificationManager::onClientNotificationReceived);
+    connect(m_client, &NotificationClient::connected,
+            this, &NotificationManager::onClientConnected);
+    connect(m_client, &NotificationClient::disconnected,
+            this, &NotificationManager::onClientDisconnected);
+    connect(m_client, &NotificationClient::errorOccurred,
+            this, &NotificationManager::onClientError);
 }
 
 NotificationManager::~NotificationManager()
@@ -117,4 +130,44 @@ void NotificationManager::generateTestNotification()
     
     addNotification(notification);
     m_testNotificationCount++;
+}
+
+void NotificationManager::startNetworkClient()
+{
+    if (m_client) {
+        m_client->startDiscoveryAndConnect();
+    }
+}
+
+void NotificationManager::stopNetworkClient()
+{
+    if (m_client) {
+        m_client->disconnectFromServer();
+    }
+}
+
+bool NotificationManager::isConnectedToServer() const
+{
+    return m_client && m_client->isConnected();
+}
+
+void NotificationManager::onClientNotificationReceived(const NotificationData& notification)
+{
+    // Add received notification to our local list and emit signal
+    addNotification(notification);
+}
+
+void NotificationManager::onClientConnected()
+{
+    emit serverConnected();
+}
+
+void NotificationManager::onClientDisconnected()
+{
+    emit serverDisconnected();
+}
+
+void NotificationManager::onClientError(const QString& error)
+{
+    emit connectionError(error);
 }

@@ -162,20 +162,8 @@ void NotificationCard::updateTimeLabel()
 {
     if (!m_timeLabel) return;
     
-    QDateTime now = QDateTime::currentDateTime();
-    qint64 secondsAgo = m_notificationData.timestamp.secsTo(now);
-    
-    QString timeText;
-    if (secondsAgo < 60) {
-        timeText = "now";
-    } else if (secondsAgo < 3600) {
-        timeText = QString("%1m").arg(secondsAgo / 60);
-    } else if (secondsAgo < 86400) {
-        timeText = QString("%1h").arg(secondsAgo / 3600);
-    } else {
-        timeText = QString("%1d").arg(secondsAgo / 86400);
-    }
-    
+    // Show actual time instead of relative time to avoid needing periodic updates
+    QString timeText = m_notificationData.timestamp.toString("hh:mm");
     m_timeLabel->setText(timeText);
 }
 

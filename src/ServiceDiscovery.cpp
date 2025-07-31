@@ -1,4 +1,5 @@
 #include "ServiceDiscovery.h"
+#include "Logger.h"
 
 #include <QUdpSocket>
 #include <QTimer>
@@ -95,10 +96,10 @@ void ServiceDiscovery::setupMulticastSocket()
     
     // Bind to mDNS port
     if (!m_socket->bind(QHostAddress::AnyIPv4, MDNS_PORT, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
-        qWarning() << "Failed to bind to mDNS port:" << m_socket->errorString();
+        Logger::warning(QString("Failed to bind to mDNS port: %1").arg(m_socket->errorString()));
         // Try to bind to any available port for sending queries
         if (!m_socket->bind(QHostAddress::AnyIPv4, 0)) {
-            qWarning() << "Failed to bind to any port:" << m_socket->errorString();
+            Logger::warning(QString("Failed to bind to any port: %1").arg(m_socket->errorString()));
             emit errorOccurred("Failed to bind UDP socket: " + m_socket->errorString());
             m_socket->deleteLater();
             m_socket = nullptr;
@@ -125,7 +126,7 @@ void ServiceDiscovery::setupMulticastSocket()
     }
     
     if (!joinedGroup) {
-        qWarning() << "Failed to join mDNS multicast group";
+        Logger::warning("Failed to join mDNS multicast group");
         // Continue anyway, we might still be able to send/receive
     }
     
@@ -144,7 +145,7 @@ void ServiceDiscovery::sendMdnsQuery()
     
     qint64 sent = m_socket->writeDatagram(query, multicastAddress, MDNS_PORT);
     if (sent == -1) {
-        qWarning() << "Failed to send mDNS query:" << m_socket->errorString();
+        Logger::warning(QString("Failed to send mDNS query: %1").arg(m_socket->errorString()));
     }
 }
 
@@ -336,7 +337,7 @@ void ServiceDiscovery::onDnsLookupFinished()
     }
     
     if (m_dnsLookup->error() != QDnsLookup::NoError) {
-        qWarning() << "DNS lookup failed:" << m_dnsLookup->errorString();
+        Logger::warning(QString("DNS lookup failed: %1").arg(m_dnsLookup->errorString()));
     } else {
         // Process DNS results if needed
         for (const QDnsHostAddressRecord& record : m_dnsLookup->hostAddressRecords()) {

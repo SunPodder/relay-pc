@@ -27,7 +27,8 @@ SOURCES += \
     src/NotificationPopup.cpp \
     src/NotificationPopupManager.cpp \
     src/ServiceDiscovery.cpp \
-    src/NotificationClient.cpp
+    src/NotificationClient.cpp \
+    src/Logger.cpp
 
 HEADERS += \
     src/MainWindow.h \
@@ -39,7 +40,8 @@ HEADERS += \
     src/NotificationPopup.h \
     src/NotificationPopupManager.h \
     src/ServiceDiscovery.h \
-    src/NotificationClient.h
+    src/NotificationClient.h \
+    src/Logger.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

@@ -1,9 +1,9 @@
 #include "NotificationClient.h"
+#include "Logger.h"
 #include <QDebug>
 #include <QJsonParseError>
 #include <QJsonArray>
 #include <QUuid>
-#include <QTimer>
 
 NotificationClient::NotificationClient(QObject *parent)
     : QObject(parent)
@@ -78,12 +78,11 @@ void NotificationClient::connectToServerDirect(const QString& hostAddress, quint
 {
     QHostAddress addr(hostAddress);
     if (addr.isNull()) {
-        qWarning() << "Invalid host address:" << hostAddress;
+        Logger::warning(QString("Invalid host address: %1").arg(hostAddress));
         emit errorOccurred("Invalid host address: " + hostAddress);
         return;
     }
     
-    qDebug() << "Connecting directly to server at" << hostAddress << ":" << port;
     connectToServer(addr, port);
 }
 
@@ -123,7 +122,7 @@ void NotificationClient::onServiceFound(const ServiceDiscovery::ServiceInfo& ser
 
 void NotificationClient::onDiscoveryError(const QString& error)
 {
-    qWarning() << "Service discovery error:" << error;
+    Logger::warning(QString("Service discovery error: %1").arg(error));
     emit errorOccurred("Service discovery failed: " + error);
     
     // Retry discovery after a delay
@@ -136,19 +135,20 @@ void NotificationClient::onDiscoveryError(const QString& error)
 
 void NotificationClient::onSocketConnected()
 {
-    qDebug() << "TCP socket connected to server at" << m_serverAddress.toString() << ":" << m_serverPort;
     m_isConnected = true;
     m_handshakeComplete = false;
     stopReconnectTimer();
     
-    // Send connection request
-    qDebug() << "Sending connection handshake...";
+    Logger::info(QString("Connected to server at %1:%2").arg(m_serverAddress.toString()).arg(m_serverPort));
+    Logger::debug("Sending connection handshake");
+    
     sendConnectionRequest();
     
     // Set a timeout for handshake response
     QTimer::singleShot(10000, this, [this]() {
         if (!m_handshakeComplete) {
-            qDebug() << "Handshake timeout - no ACK received within 10 seconds";
+            Logger::warning("Handshake timeout - no ACK received within 10 seconds");
+            emit errorOccurred("Handshake timeout");
         }
     });
 }
@@ -159,6 +159,7 @@ void NotificationClient::onSocketDisconnected()
     m_handshakeComplete = false;
     m_receiveBuffer.clear();
     
+    Logger::info("Disconnected from server");
     emit disconnected();
     
     // Start reconnect timer if auto-reconnect is enabled
@@ -170,7 +171,7 @@ void NotificationClient::onSocketDisconnected()
 void NotificationClient::onSocketError(QAbstractSocket::SocketError error)
 {
     QString errorString = m_socket->errorString();
-    qWarning() << "Socket error:" << error << "-" << errorString;
+    Logger::warning(QString("Socket error: %1 - %2").arg(error).arg(errorString));
     
     m_isConnected = false;
     emit errorOccurred("Connection error: " + errorString);
@@ -184,69 +185,51 @@ void NotificationClient::onSocketError(QAbstractSocket::SocketError error)
 void NotificationClient::onDataReceived()
 {
     QByteArray newData = m_socket->readAll();
-    qDebug() << "Received" << newData.length() << "bytes of data";
-    
-    // Show the data content (safely, replacing null bytes with \0 for display)
-    QByteArray displayData = newData;
-    displayData.replace('\0', "\\0");
-    qDebug() << "Data content:" << displayData;
-    
     m_receiveBuffer.append(newData);
-    qDebug() << "Total buffer size:" << m_receiveBuffer.length() << "bytes";
-    
-    // Process messages immediately without counting - avoid potential issues with count()
     processReceivedData();
 }
 
 void NotificationClient::processReceivedData()
 {
-    // Process complete JSON messages (terminated by double null bytes)
-    // Add safety limit to prevent infinite loops
-    int processedMessages = 0;
-    const int maxMessagesPerCall = 10; // Safety limit
-
-    while (m_receiveBuffer.contains("\x00\x00") && processedMessages < maxMessagesPerCall) {
-        int termIndex = m_receiveBuffer.indexOf("\x00\x00");
-        if (termIndex == -1) {
-            break; // No more complete messages
+    // Process complete messages using length prefix
+    while (m_receiveBuffer.length() >= 4) {
+        // Read the 4-byte big-endian length prefix
+        quint32 messageLength = 0;
+        messageLength |= (static_cast<quint8>(m_receiveBuffer[0]) << 24);
+        messageLength |= (static_cast<quint8>(m_receiveBuffer[1]) << 16);
+        messageLength |= (static_cast<quint8>(m_receiveBuffer[2]) << 8);
+        messageLength |= static_cast<quint8>(m_receiveBuffer[3]);
+        
+        // Check if we have the complete message (prefix + data)
+        quint32 totalRequired = 4 + messageLength;
+        if (static_cast<quint32>(m_receiveBuffer.length()) < totalRequired) {
+            // Wait for more data
+            break;
         }
         
-        QByteArray messageData = m_receiveBuffer.left(termIndex);
-        m_receiveBuffer.remove(0, termIndex + 2);
+        // Extract the message data (skip the 4-byte prefix)
+        QByteArray messageData = m_receiveBuffer.mid(4, messageLength);
+        m_receiveBuffer.remove(0, totalRequired);
         
-        if (messageData.isEmpty()) {
-            processedMessages++;
-            continue;
-        }
-        
-        // Parse JSON message
+        // Parse and handle the message
         QJsonParseError parseError;
         QJsonDocument doc = QJsonDocument::fromJson(messageData, &parseError);
         
         if (parseError.error != QJsonParseError::NoError) {
-            qDebug() << "JSON parse error:" << parseError.errorString();
-            processedMessages++;
+            Logger::warning(QString("Failed to parse JSON: %1").arg(parseError.errorString()));
             continue;
         }
         
         if (!doc.isObject()) {
-            qDebug() << "Received data is not a JSON object";
-            processedMessages++;
+            Logger::warning("Received data is not a JSON object");
             continue;
         }
         
         QJsonObject messageJson = doc.object();
-        qDebug() << "Parsed message:" << QJsonDocument(messageJson).toJson(QJsonDocument::Compact);
+        Logger::debug(QString("Received message: %1").arg(QJsonDocument(messageJson).toJson(QJsonDocument::Compact)));
         
         // Handle the message
         handleMessage(messageJson);
-        processedMessages++;
-    }
-
-    if (processedMessages >= maxMessagesPerCall && m_receiveBuffer.contains("\x00\x00")) {
-        qDebug() << "Hit message processing limit, scheduling continuation";
-        // Schedule processing of remaining messages to avoid blocking the event loop
-        QTimer::singleShot(0, this, &NotificationClient::processReceivedData);
     }
 }
 
@@ -311,82 +294,75 @@ void NotificationClient::sendConnectionRequest()
     
     connMsg["payload"] = payload;
     
-    qDebug() << "Sending conn message:" << QJsonDocument(connMsg).toJson(QJsonDocument::Compact);
     sendMessage(connMsg);
 }
 
 void NotificationClient::sendMessage(const QJsonObject& message)
 {
     if (!m_socket || !m_isConnected) {
-        qDebug() << "Cannot send message - socket not connected";
         return;
     }
     
     QJsonDocument doc(message);
     QByteArray messageData = doc.toJson(QJsonDocument::Compact);
     
-    qDebug() << "Sending message:" << messageData;
+    // Create length prefix (4-byte big-endian unsigned integer)
+    quint32 messageLength = static_cast<quint32>(messageData.length());
+    QByteArray lengthPrefix(4, 0);
+    lengthPrefix[0] = static_cast<char>((messageLength >> 24) & 0xFF);
+    lengthPrefix[1] = static_cast<char>((messageLength >> 16) & 0xFF); 
+    lengthPrefix[2] = static_cast<char>((messageLength >> 8) & 0xFF);
+    lengthPrefix[3] = static_cast<char>(messageLength & 0xFF);
     
-    // Add null byte termination
-    messageData.append(static_cast<char>(0));
-    messageData.append(static_cast<char>(0));
+    // Send length prefix followed by message data
+    QByteArray fullMessage = lengthPrefix + messageData;
     
-    qDebug() << "Total bytes being sent:" << messageData.length();
-    
-    int bytesWritten = m_socket->write(messageData);
+    m_socket->write(fullMessage);
     m_socket->flush();
-    
-    qDebug() << "Bytes written to socket:" << bytesWritten;
 }
 
 void NotificationClient::handleMessage(const QJsonObject& message)
 {
     QString msgType = message.value("type").toString();
-    qDebug() << "Handling message type:" << msgType;
     
     if (msgType == "ack") {
-        qDebug() << "Received ACK message";
         QJsonObject payload = message.value("payload").toObject();
         QString status = payload.value("status").toString();
-        qDebug() << "ACK status:" << status;
         
         if (status == "ok") {
-            qDebug() << "Handshake successful!";
             m_handshakeComplete = true;
+            Logger::info("Handshake successful - ready to receive notifications");
             emit connected();
         } else {
             QString reason = payload.value("reason").toString();
-            qDebug() << "Connection rejected:" << reason;
+            Logger::warning(QString("Connection rejected by server: %1").arg(reason));
             emit errorOccurred("Connection rejected by server: " + reason);
             disconnectFromServer();
         }
     }
     else if (msgType == "notification") {
-        qDebug() << "Received notification message";
         if (m_handshakeComplete) {
             QJsonObject payload = message.value("payload").toObject();
             NotificationData notification = parseNotificationJson(payload);
             if (!notification.title.isEmpty()) {
-                qDebug() << "Emitting notification:" << notification.title;
+                Logger::debug(QString("Received notification: %1").arg(notification.title));
                 emit notificationReceived(notification);
             }
-        } else {
-            qDebug() << "Ignoring notification - handshake not complete";
         }
     }
     else if (msgType == "ping") {
-        qDebug() << "Received ping message";
+        Logger::debug(QString("Received ping with ID: %1").arg(message.value("id").toString()));
         handlePing(message);
     }
     else {
-        qDebug() << "Unknown message type:" << msgType;
+        Logger::warning(QString("Unknown message type: %1").arg(msgType));
     }
 }
 
 void NotificationClient::handlePing(const QJsonObject& message)
 {
     QString pingId = message.value("id").toString();
-    qDebug() << "Responding to ping with ID:" << pingId;
+    Logger::debug(QString("Sending pong response for ping ID: %1").arg(pingId));
     sendPong(pingId);
 }
 
@@ -400,7 +376,7 @@ void NotificationClient::sendPong(const QString& pingId)
     QJsonObject payload;
     payload["device"] = "Relay-PC";
     pongMsg["payload"] = payload;
-    
+
     sendMessage(pongMsg);
 }
 

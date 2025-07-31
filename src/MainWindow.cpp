@@ -76,7 +76,7 @@ void MainWindow::setupUI()
     m_notificationManager->startNetworkClient();
     
     // Add some dummy notifications for testing
-    m_notificationManager->addDummyNotifications();
+    // m_notificationManager->addDummyNotifications();
 }
 
 void MainWindow::setupTrayIcon()

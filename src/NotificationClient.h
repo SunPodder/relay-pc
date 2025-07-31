@@ -20,7 +20,13 @@ public:
 
     void startDiscoveryAndConnect();
     void connectToServer(const QHostAddress& address, quint16 port);
+    void connectToServerDirect(const QString& hostAddress, quint16 port); // For testing
     void disconnectFromServer();
+    
+    // Notification interaction methods
+    void sendNotificationReply(const QString& notificationId, const QString& actionKey, const QString& replyText);
+    void sendNotificationAction(const QString& notificationId, const QString& actionKey);
+    void sendNotificationDismiss(const QString& notificationId);
     
     bool isConnected() const;
     bool isDiscovering() const;
@@ -47,6 +53,11 @@ private slots:
 private:
     void setupSocket();
     void processReceivedData();
+    void sendConnectionRequest();
+    void sendMessage(const QJsonObject& message);
+    void handleMessage(const QJsonObject& message);
+    void handlePing(const QJsonObject& message);
+    void sendPong(const QString& pingId);
     NotificationData parseNotificationJson(const QJsonObject& json);
     void startReconnectTimer();
     void stopReconnectTimer();
@@ -61,6 +72,7 @@ private:
     QByteArray m_receiveBuffer;
     bool m_isConnected;
     bool m_autoReconnect;
+    bool m_handshakeComplete;
     
     static constexpr int RECONNECT_INTERVAL = 5000; // 5 seconds
     static constexpr quint16 DEFAULT_PORT = 9999;

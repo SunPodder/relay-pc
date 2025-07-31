@@ -26,6 +26,7 @@ struct NotificationData {
     QString iconPath;
     QString packageName;
     int id;
+    QString stringId;  // Original string ID from protocol
     QDateTime timestamp;
     bool canReply;
     QList<NotificationAction> actions;

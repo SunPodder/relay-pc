@@ -25,6 +25,9 @@ public:
     void stopNetworkClient();
     bool isConnectedToServer() const;
     
+    // Getter for testing
+    NotificationClient* getClient() const { return m_client; }
+    
     // For testing purposes
     void addDummyNotifications();
 

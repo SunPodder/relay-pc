@@ -18,6 +18,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    
+    // Getter for testing
+    NotificationManager* getNotificationManager() const { return m_notificationManager; }
 
 private slots:
     void togglePanel();

@@ -97,7 +97,7 @@ void MainWindow::setupTrayIcon()
     
     m_trayIcon = new QSystemTrayIcon(this);
     m_trayIcon->setContextMenu(m_trayMenu);
-    m_trayIcon->setIcon(QIcon(":/icons/relay-pc.png")); // You'll need to add this resource
+    m_trayIcon->setIcon(QIcon::fromTheme("notification-inactive", QIcon::fromTheme("mail-unread")));
     m_trayIcon->setToolTip("Relay PC - Notification Center");
     
     connect(m_trayIcon, &QSystemTrayIcon::activated,
@@ -178,10 +178,6 @@ void MainWindow::onServerConnected()
     }
     if (m_connectAction) {
         m_connectAction->setEnabled(false);
-    }
-    if (m_trayIcon) {
-        m_trayIcon->showMessage("Relay PC", "Connected to notification server", 
-                              QSystemTrayIcon::Information, 3000);
     }
 }
 

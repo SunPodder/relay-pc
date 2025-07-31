@@ -4,8 +4,10 @@
 #include <QApplication>
 #include <QScreen>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QScrollArea>
 #include <QLabel>
+#include <QPushButton>
 #include <QScrollBar>
 #include <QPainter>
 #include <QStyleOption>
@@ -17,6 +19,7 @@ NotificationPanel::NotificationPanel(QWidget *parent)
     , m_scrollWidget(nullptr)
     , m_scrollLayout(nullptr)
     , m_emptyLabel(nullptr)
+    , m_clearButton(nullptr)
 {
     setupUI();
     positionPanel();
@@ -42,6 +45,10 @@ void NotificationPanel::setupUI()
     m_mainLayout->setContentsMargins(10, 10, 10, 10);
     m_mainLayout->setSpacing(0);
     
+    // Create header layout with title and clear button
+    QHBoxLayout* headerLayout = new QHBoxLayout();
+    headerLayout->setSpacing(10);
+    
     // Create title
     QLabel* titleLabel = new QLabel("Notifications", this);
     titleLabel->setObjectName("titleLabel");
@@ -53,10 +60,54 @@ void NotificationPanel::setupUI()
         "    padding: 10px;"
         "    background-color: rgba(0, 0, 0, 0.8);"
         "    border-radius: 8px;"
+        "}"
+    );
+    
+    // Create clear button
+    m_clearButton = new QPushButton("Clear All", this);
+    m_clearButton->setObjectName("clearButton");
+    m_clearButton->setStyleSheet(
+        "QPushButton#clearButton {"
+        "    font-size: 12px;"
+        "    font-weight: bold;"
+        "    color: white;"
+        "    background-color: rgba(200, 60, 60, 0.8);"
+        "    border: 1px solid rgba(255, 255, 255, 0.2);"
+        "    border-radius: 6px;"
+        "    padding: 6px 12px;"
+        "    min-width: 60px;"
+        "}"
+        "QPushButton#clearButton:hover {"
+        "    background-color: rgba(220, 80, 80, 0.9);"
+        "}"
+        "QPushButton#clearButton:pressed {"
+        "    background-color: rgba(180, 40, 40, 0.9);"
+        "}"
+        "QPushButton#clearButton:disabled {"
+        "    background-color: rgba(100, 100, 100, 0.5);"
+        "    color: rgba(255, 255, 255, 0.4);"
+        "}"
+    );
+    
+    // Connect clear button to slot
+    connect(m_clearButton, &QPushButton::clicked, this, &NotificationPanel::clearAllNotifications);
+    
+    // Add widgets to header layout
+    headerLayout->addWidget(titleLabel);
+    headerLayout->addStretch(); // Push clear button to the right
+    headerLayout->addWidget(m_clearButton);
+    
+    // Create a header widget to contain the layout
+    QWidget* headerWidget = new QWidget(this);
+    headerWidget->setLayout(headerLayout);
+    headerWidget->setStyleSheet(
+        "QWidget {"
+        "    background-color: transparent;"
         "    margin-bottom: 10px;"
         "}"
     );
-    m_mainLayout->addWidget(titleLabel);
+    
+    m_mainLayout->addWidget(headerWidget);
     
     setupScrollArea();
     
@@ -197,6 +248,11 @@ void NotificationPanel::updateEmptyState()
 {
     bool isEmpty = m_notificationCards.isEmpty();
     m_emptyLabel->setVisible(isEmpty);
+    
+    // Enable/disable clear button based on whether there are notifications
+    if (m_clearButton) {
+        m_clearButton->setEnabled(!isEmpty);
+    }
 }
 
 void NotificationPanel::paintEvent(QPaintEvent *event)

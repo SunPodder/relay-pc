@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include <QLabel>
+#include <QPushButton>
 #include <QPropertyAnimation>
 #include "NotificationData.h"
 
@@ -45,6 +46,7 @@ private:
     QWidget* m_scrollWidget;
     QVBoxLayout* m_scrollLayout;
     QLabel* m_emptyLabel;
+    QPushButton* m_clearButton;
     
     QList<NotificationCard*> m_notificationCards;
 };

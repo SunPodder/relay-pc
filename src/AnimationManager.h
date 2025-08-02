@@ -38,7 +38,7 @@ private:
     bool m_isVisible;
     bool m_isAnimatingOut; // Track if we're animating out (for hiding)
     
-    static constexpr int ANIMATION_DURATION = 300;
+    static constexpr int ANIMATION_DURATION = 0;
 };
 
 #endif // ANIMATIONMANAGER_H

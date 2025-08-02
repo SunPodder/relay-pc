@@ -1,9 +1,11 @@
 #include "NotificationClient.h"
 #include "Logger.h"
+#include "qglobal.h"
 #include <QDebug>
 #include <QJsonParseError>
 #include <QJsonArray>
 #include <QUuid>
+#include <QSysInfo>
 
 NotificationClient::NotificationClient(QObject *parent)
     : QObject(parent)
@@ -282,8 +284,8 @@ void NotificationClient::sendConnectionRequest()
     connMsg["timestamp"] = QDateTime::currentSecsSinceEpoch();
     
     QJsonObject payload;
-    payload["device_name"] = "Relay-PC";
-    payload["platform"] = "linux";
+    payload["device_name"] = QSysInfo::machineHostName();
+    payload["platform"] = QSysInfo::prettyProductName();
     payload["version"] = "1.0.0";
     QJsonArray supports;
     supports.append("notification");

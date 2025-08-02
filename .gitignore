@@ -1,6 +1,5 @@
 .cache
 build
-protocols
 *.o
 relay-pc
 Makefile

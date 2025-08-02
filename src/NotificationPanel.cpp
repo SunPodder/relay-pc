@@ -42,7 +42,7 @@ void NotificationPanel::setupUI()
 {
     // Create main layout
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
+    m_mainLayout->setContentsMargins(10, 10, 2, 10);
     m_mainLayout->setSpacing(0);
     
     // Create header layout with title and clear button

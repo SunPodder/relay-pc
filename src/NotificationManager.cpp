@@ -68,17 +68,25 @@ void NotificationManager::clearAllNotifications()
 void NotificationManager::addDummyNotifications()
 {
     // Add some initial dummy notifications for testing
-    QStringList appNames = {"WhatsApp", "Telegram", "Discord", "Gmail", "Slack"};
-    QStringList titles = {"New Message", "Meeting Reminder", "File Shared", "System Update", "Battery Low"};
+    QStringList appNames = {"WhatsApp", "Telegram", "Discord", "Gmail", "Slack", "WhatsApp"};
+    QStringList titles = {
+        "New Message",
+        "M", // Very short title
+        "This is a very very very long notification title for testing UI truncation and overflow handling in the notification list view",
+        "Update",
+        "Battery Low",
+        "New Message"
+    };
     QStringList bodies = {
         "Hey, are you available for a quick call?",
-        "Stand-up meeting in 15 minutes",
-        "document.pdf has been shared with you",
-        "System restart required to complete updates",
-        "Please connect your charger"
+        "OK", // Very short body
+        "This is a very long notification body. It contains a lot of text to simulate what happens when the notification message is much longer than usual. This should help test how the UI handles wrapping, scrolling, and truncation of notification content. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "System restart required.",
+        "Please connect your charger",
+        "This is another very long notification body. It contains a lot of text to simulate what happens when the notification message is much longer than usual. This should help test how the UI handles wrapping, scrolling, and truncation of notification content. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
     };
     
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 6; ++i) {
         NotificationData notification(
             appNames[i % appNames.size()],
             titles[i % titles.size()],

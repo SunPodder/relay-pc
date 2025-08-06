@@ -199,20 +199,51 @@ void NotificationPanel::addNotification(const NotificationData& notification)
         m_emptyLabel->hide();
     }
     
-    // Create new notification card
-    NotificationCard* card = new NotificationCard(notification, m_scrollWidget);
+    // Check if we should group this notification with an existing one
+    QString groupKey = notification.getGroupKey();
+    NotificationCard* existingCard = nullptr;
     
-    // Connect card signals
-    connect(card, &NotificationCard::removeRequested,
-            this, [this, card]() {
-                removeNotification(card->getNotificationId());
-            });
+    // Look for an existing notification with the same group key
+    for (NotificationCard* card : m_notificationCards) {
+        if (card->getNotificationData().getGroupKey() == groupKey) {
+            existingCard = card;
+            break;
+        }
+    }
     
-    // Insert at the beginning (newest first)
-    m_scrollLayout->insertWidget(0, card);
-    m_notificationCards.prepend(card);
+    if (existingCard) {
+        // Merge with existing notification
+        NotificationData updatedData = existingCard->getNotificationData();
+        updatedData.mergeWith(notification);
+        
+        // Update the existing card with merged data
+        existingCard->updateNotificationData(updatedData);
+        
+        // Move the updated card to the top (newest first)
+        int currentIndex = m_notificationCards.indexOf(existingCard);
+        if (currentIndex > 0) {
+            m_scrollLayout->removeWidget(existingCard);
+            m_notificationCards.removeAt(currentIndex);
+            
+            m_scrollLayout->insertWidget(0, existingCard);
+            m_notificationCards.prepend(existingCard);
+        }
+    } else {
+        // Create new notification card
+        NotificationCard* card = new NotificationCard(notification, m_scrollWidget);
+        
+        // Connect card signals
+        connect(card, &NotificationCard::removeRequested,
+                this, [this, card]() {
+                    removeNotification(card->getNotificationId());
+                });
+        
+        // Insert at the beginning (newest first)
+        m_scrollLayout->insertWidget(0, card);
+        m_notificationCards.prepend(card);
+    }
     
-    // Scroll to top to show new notification
+    // Scroll to top to show new/updated notification
     m_scrollArea->verticalScrollBar()->setValue(0);
     
     updateEmptyState();

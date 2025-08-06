@@ -19,6 +19,7 @@ public:
 
     int getNotificationId() const { return m_notificationData.id; }
     const NotificationData& getNotificationData() const { return m_notificationData; }
+    void updateNotificationData(const NotificationData& newData);
 
 signals:
     void removeRequested();
@@ -42,6 +43,8 @@ private:
     void setupActionButtons();
     void showActions();
     void hideActions();
+    void showBodies();
+    void hideBodies();
     void updateCardHeight();
     
     NotificationData m_notificationData;
@@ -62,11 +65,10 @@ private:
     
     bool m_isHovered;
     bool m_actionsVisible;
+    bool m_bodiesExpanded;  // Track if we're showing all bodies
     
     static constexpr int CARD_MARGIN = 12;
     static constexpr int CARD_SPACING = 8;
-    static constexpr int CARD_HEIGHT_COLLAPSED = 100;
-    static constexpr int CARD_HEIGHT_EXPANDED = 150;
 };
 
 #endif // NOTIFICATIONCARD_H

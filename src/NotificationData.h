@@ -22,7 +22,8 @@ struct NotificationAction {
 struct NotificationData {
     QString appName;
     QString title;
-    QString body;
+    QString body;  // Primary body text (for backward compatibility)
+    QStringList bodies;  // Array of all bodies for grouped notifications
     QString iconPath;
     QString packageName;
     int id;
@@ -30,12 +31,22 @@ struct NotificationData {
     QDateTime timestamp;
     bool canReply;
     QList<NotificationAction> actions;
+    int groupCount;  // Number of notifications in this group
     
-    NotificationData() : id(0), timestamp(QDateTime::currentDateTime()), canReply(false) {}
+    NotificationData() : id(0), timestamp(QDateTime::currentDateTime()), canReply(false), groupCount(1) {}
     
     NotificationData(const QString& app, const QString& title, const QString& body)
         : appName(app), title(title), body(body), id(0), 
-          timestamp(QDateTime::currentDateTime()), canReply(false) {}
+          timestamp(QDateTime::currentDateTime()), canReply(false), groupCount(1) {
+        bodies.append(body);
+    }
+    
+    // Helper methods for grouping
+    QString getGroupKey() const;
+    void mergeWith(const NotificationData& other);
+    QString getDisplayBody() const;
+    QString getAllBodiesFormatted() const;
+    bool isGrouped() const { return groupCount > 1; }
     
     // Convert to/from JSON for serialization
     QJsonObject toJson() const;

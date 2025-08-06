@@ -248,6 +248,12 @@ NotificationData NotificationClient::parseNotificationJson(const QJsonObject& js
     notification.packageName = json.value("package").toString();
     notification.canReply = json.value("can_reply").toBool();
     
+    // Initialize bodies array with the primary body
+    if (!notification.body.isEmpty()) {
+        notification.bodies.append(notification.body);
+    }
+    notification.groupCount = 1; // New notifications start as single items
+    
     // Handle timestamp
     if (json.contains("timestamp")) {
         notification.timestamp = QDateTime::fromSecsSinceEpoch(json.value("timestamp").toInteger());

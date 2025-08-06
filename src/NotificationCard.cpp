@@ -1,4 +1,5 @@
 #include "NotificationCard.h"
+#include "qsizepolicy.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -26,22 +27,52 @@ NotificationCard::NotificationCard(const NotificationData& notification, QWidget
     , m_actionButtonsLayout(nullptr)
     , m_isHovered(false)
     , m_actionsVisible(false)
+    , m_bodiesExpanded(false)
 {
     setupUI();
     
-    // Set widget properties - dynamic height based on content
-    setMinimumHeight(CARD_HEIGHT_COLLAPSED);
-    setMaximumHeight(CARD_HEIGHT_EXPANDED);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // Set widget properties - take only the minimum height needed
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     setMouseTracking(true);
     
-    // Set initial height
+    // Set the initial height to exactly what's needed
     updateCardHeight();
 }
 
 NotificationCard::~NotificationCard()
 {
     // QWidget destructor handles child widgets
+}
+
+void NotificationCard::updateNotificationData(const NotificationData& newData)
+{
+    m_notificationData = newData;
+    m_actionsVisible = false;
+    m_bodiesExpanded = false;
+    
+    // Update UI elements with new data
+    if (m_appNameLabel) {
+        m_appNameLabel->setText(m_notificationData.appName);
+    }
+    if (m_titleLabel) {
+        m_titleLabel->setText(m_notificationData.title);
+    }
+    if (m_bodyLabel) {
+        m_bodyLabel->setText(m_notificationData.getDisplayBody());
+    }
+    updateTimeLabel();
+    
+    // Update action indicator visibility based on actions or grouping
+    if (m_actionIndicator) {
+        bool shouldShowIndicator = !m_notificationData.actions.isEmpty() || m_notificationData.isGrouped();
+        m_actionIndicator->setVisible(shouldShowIndicator);
+    }
+
+    setupActionButtons();
+    updateCardHeight();
+    
+    // Force a repaint - Qt will handle the layout automatically
+    update();
 }
 
 void NotificationCard::setupUI()
@@ -65,8 +96,8 @@ void NotificationCard::setupUI()
     );
     m_headerLayout->addWidget(m_appNameLabel);
     
-    // Action indicator (down arrow) - only show if there are actions
-    if (!m_notificationData.actions.isEmpty()) {
+    // Action indicator (down arrow) - show if there are actions OR grouped messages
+    if (!m_notificationData.actions.isEmpty() || m_notificationData.isGrouped()) {
         m_actionIndicator = new QLabel("⌄", this);
         m_actionIndicator->setStyleSheet(
             "QLabel {"
@@ -127,6 +158,7 @@ void NotificationCard::setupUI()
     if (!m_notificationData.title.isEmpty()) {
         m_titleLabel = new QLabel(m_notificationData.title, this);
         m_titleLabel->setWordWrap(true);
+        m_titleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         m_titleLabel->setStyleSheet(
             "QLabel {"
             "    color: white;"
@@ -137,10 +169,11 @@ void NotificationCard::setupUI()
         m_mainLayout->addWidget(m_titleLabel);
     }
     
-    // Body label
+    // Body label  
     if (!m_notificationData.body.isEmpty()) {
-        m_bodyLabel = new QLabel(m_notificationData.body, this);
+        m_bodyLabel = new QLabel(m_notificationData.getDisplayBody(), this);
         m_bodyLabel->setWordWrap(true);
+        m_bodyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         m_bodyLabel->setStyleSheet(
             "QLabel {"
             "    color: rgba(255, 255, 255, 0.8);"
@@ -156,6 +189,8 @@ void NotificationCard::setupUI()
     
     // Add stretch to push content to top
     m_mainLayout->addStretch();
+    adjustSize();
+    updateCardHeight();
 }
 
 void NotificationCard::updateTimeLabel()
@@ -271,10 +306,33 @@ void NotificationCard::hideActions()
     }
 }
 
+void NotificationCard::showBodies()
+{
+    if (m_bodyLabel && m_notificationData.isGrouped()) {
+        // Show all bodies formatted
+        m_bodyLabel->setText(m_notificationData.getAllBodiesFormatted());
+        m_bodiesExpanded = true;
+        updateCardHeight();
+    }
+}
+
+void NotificationCard::hideBodies()
+{
+    if (m_bodyLabel && m_notificationData.isGrouped()) {
+        // Show only the latest body
+        m_bodyLabel->setText(m_notificationData.getDisplayBody());
+        m_bodiesExpanded = false;
+        updateCardHeight();
+    }
+}
+
 void NotificationCard::updateCardHeight()
 {
-    int targetHeight = m_actionsVisible ? CARD_HEIGHT_EXPANDED : CARD_HEIGHT_COLLAPSED;
-    setFixedHeight(targetHeight);
+    // Let Qt's layout system handle the height automatically
+    // This is much more reliable than manual calculations
+    setMinimumHeight(this->sizeHint().height());
+    setMaximumHeight(this->sizeHint().height());
+    adjustSize();
     updateGeometry();
 }
 
@@ -309,13 +367,17 @@ bool NotificationCard::eventFilter(QObject *obj, QEvent *event)
 
 void NotificationCard::onActionIndicatorClicked()
 {
-    if (m_actionsVisible) {
+    if (m_actionsVisible || m_bodiesExpanded) {
+        // Hide expanded content (actions and/or bodies)
         hideActions();
+        hideBodies();
         if (m_actionIndicator) {
             m_actionIndicator->setText("⌄"); // Down arrow
         }
     } else {
-        showActions();
+        // Show expanded content
+        showActions();  // This will show actions if they exist
+        showBodies();   // This will show all bodies if grouped
         if (m_actionIndicator) {
             m_actionIndicator->setText("⌃"); // Up arrow
         }

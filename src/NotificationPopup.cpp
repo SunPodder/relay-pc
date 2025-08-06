@@ -1,4 +1,5 @@
 #include "NotificationPopup.h"
+#include "qfontmetrics.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -128,6 +129,9 @@ void NotificationPopup::setupUI()
     // Title label
     if (!m_notificationData.title.isEmpty()) {
         m_titleLabel = new QLabel(m_notificationData.title, this);
+        QFontMetrics fontMetrics(m_titleLabel->font());
+        QString elidedText = fontMetrics.elidedText(m_notificationData.title, Qt::ElideRight, POPUP_WIDTH - 2 * POPUP_MARGIN);
+        m_titleLabel->setText(elidedText);
         m_titleLabel->setWordWrap(true);
         m_titleLabel->setStyleSheet(
             "QLabel {"
@@ -143,6 +147,9 @@ void NotificationPopup::setupUI()
     // Body label
     if (!m_notificationData.body.isEmpty()) {
         m_bodyLabel = new QLabel(m_notificationData.body, this);
+        QFontMetrics fontMetrics(m_bodyLabel->font());
+        QString elidedText = fontMetrics.elidedText(m_notificationData.body, Qt::ElideRight, 3 * POPUP_WIDTH - 2 * POPUP_MARGIN);
+        m_bodyLabel->setText(elidedText);
         m_bodyLabel->setWordWrap(true);
         m_bodyLabel->setStyleSheet(
             "QLabel {"
@@ -153,6 +160,7 @@ void NotificationPopup::setupUI()
         );
         m_mainLayout->addWidget(m_bodyLabel);
     }
+    m_mainLayout->addStretch();
 }
 
 void NotificationPopup::updateTimeLabel()

@@ -1,5 +1,4 @@
 #include "NotificationCard.h"
-#include "qsizepolicy.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -32,11 +31,8 @@ NotificationCard::NotificationCard(const NotificationData& notification, QWidget
     setupUI();
     
     // Set widget properties - take only the minimum height needed
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     setMouseTracking(true);
-    
-    // Set the initial height to exactly what's needed
-    updateCardHeight();
 }
 
 NotificationCard::~NotificationCard()
@@ -69,10 +65,6 @@ void NotificationCard::updateNotificationData(const NotificationData& newData)
     }
 
     setupActionButtons();
-    updateCardHeight();
-    
-    // Force a repaint - Qt will handle the layout automatically
-    update();
 }
 
 void NotificationCard::setupUI()
@@ -151,14 +143,18 @@ void NotificationCard::setupUI()
     );
     connect(m_removeButton, &QPushButton::clicked, this, &NotificationCard::onRemoveClicked);
     m_headerLayout->addWidget(m_removeButton);
-    
     m_mainLayout->addLayout(m_headerLayout);
-    
+
+    m_contentLayout = new QVBoxLayout();
+    m_contentLayout->setContentsMargins(0, 0, 0, 0);
+    m_contentLayout->setSpacing(4);
+    m_mainLayout->addLayout(m_contentLayout);
+
     // Title label
     if (!m_notificationData.title.isEmpty()) {
         m_titleLabel = new QLabel(m_notificationData.title, this);
         m_titleLabel->setWordWrap(true);
-        m_titleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        m_titleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
         m_titleLabel->setStyleSheet(
             "QLabel {"
             "    color: white;"
@@ -166,14 +162,14 @@ void NotificationCard::setupUI()
             "    font-weight: bold;"
             "}"
         );
-        m_mainLayout->addWidget(m_titleLabel);
+        m_contentLayout->addWidget(m_titleLabel);
     }
     
     // Body label  
     if (!m_notificationData.body.isEmpty()) {
         m_bodyLabel = new QLabel(m_notificationData.getDisplayBody(), this);
         m_bodyLabel->setWordWrap(true);
-        m_bodyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        m_bodyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
         m_bodyLabel->setStyleSheet(
             "QLabel {"
             "    color: rgba(255, 255, 255, 0.8);"
@@ -181,16 +177,12 @@ void NotificationCard::setupUI()
             "    line-height: 1.4;"
             "}"
         );
-        m_mainLayout->addWidget(m_bodyLabel);
+        m_contentLayout->addWidget(m_bodyLabel);
     }
     
     // Setup action buttons (initially hidden)
     setupActionButtons();
-    
-    // Add stretch to push content to top
-    m_mainLayout->addStretch();
-    adjustSize();
-    updateCardHeight();
+    updateGeometry();
 }
 
 void NotificationCard::updateTimeLabel()
@@ -293,7 +285,7 @@ void NotificationCard::showActions()
     if (m_actionWidget && !m_notificationData.actions.isEmpty()) {
         m_actionWidget->show();
         m_actionsVisible = true;
-        updateCardHeight();
+        updateGeometry();
     }
 }
 
@@ -302,7 +294,7 @@ void NotificationCard::hideActions()
     if (m_actionWidget) {
         m_actionWidget->hide();
         m_actionsVisible = false;
-        updateCardHeight();
+        updateGeometry();
     }
 }
 
@@ -312,7 +304,7 @@ void NotificationCard::showBodies()
         // Show all bodies formatted
         m_bodyLabel->setText(m_notificationData.getAllBodiesFormatted());
         m_bodiesExpanded = true;
-        updateCardHeight();
+        updateGeometry();
     }
 }
 
@@ -322,18 +314,8 @@ void NotificationCard::hideBodies()
         // Show only the latest body
         m_bodyLabel->setText(m_notificationData.getDisplayBody());
         m_bodiesExpanded = false;
-        updateCardHeight();
+        updateGeometry();
     }
-}
-
-void NotificationCard::updateCardHeight()
-{
-    // Let Qt's layout system handle the height automatically
-    // This is much more reliable than manual calculations
-    setMinimumHeight(this->sizeHint().height());
-    setMaximumHeight(this->sizeHint().height());
-    adjustSize();
-    updateGeometry();
 }
 
 void NotificationCard::onActionButtonClicked()

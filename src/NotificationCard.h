@@ -51,6 +51,7 @@ private:
     
     QVBoxLayout* m_mainLayout;
     QHBoxLayout* m_headerLayout;
+    QVBoxLayout* m_contentLayout;
     QHBoxLayout* m_actionLayout;
     
     QLabel* m_appNameLabel;

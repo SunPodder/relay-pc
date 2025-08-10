@@ -1,5 +1,6 @@
 #include "NotificationManager.h"
 #include "NotificationClient.h"
+#include "src/Logger.h"
 
 #include <QTimer>
 #include <QDateTime>
@@ -20,6 +21,8 @@ NotificationManager::NotificationManager(QObject *parent)
     m_client = new NotificationClient(this);
     connect(m_client, &NotificationClient::notificationReceived,
             this, &NotificationManager::onClientNotificationReceived);
+    connect(m_client, &NotificationClient::notificationDismissed,
+            this, &NotificationManager::onClientNotificationDismissed);
     connect(m_client, &NotificationClient::connected,
             this, &NotificationManager::onClientConnected);
     connect(m_client, &NotificationClient::disconnected,
@@ -52,8 +55,15 @@ void NotificationManager::removeNotification(int notificationId)
 {
     for (int i = 0; i < m_notifications.size(); ++i) {
         if (m_notifications[i].id == notificationId) {
+            QString stringId = m_notifications[i].stringId;
             m_notifications.removeAt(i);
             emit notificationRemoved(notificationId);
+            
+            // Send dismiss message to Android if we have a string ID and client
+            if (!stringId.isEmpty() && m_client && m_client->isConnected()) {
+                m_client->sendNotificationDismiss(stringId);
+            }
+            
             break;
         }
     }
@@ -163,6 +173,19 @@ void NotificationManager::onClientNotificationReceived(const NotificationData& n
 {
     // Add received notification to our local list and emit signal
     addNotification(notification);
+}
+
+void NotificationManager::onClientNotificationDismissed(const QString& notificationId)
+{
+    // Find and remove the notification with the matching string ID
+    for (int i = 0; i < m_notifications.size(); ++i) {
+        if (m_notifications[i].stringId == notificationId) {
+            int intId = m_notifications[i].id;
+            m_notifications.removeAt(i);
+            emit notificationRemoved(intId);
+            break;
+        }
+    }
 }
 
 void NotificationManager::onClientConnected()

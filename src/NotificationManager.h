@@ -41,6 +41,7 @@ signals:
 private slots:
     void generateTestNotification();
     void onClientNotificationReceived(const NotificationData& notification);
+    void onClientNotificationDismissed(const QString& notificationId);
     void onClientConnected();
     void onClientDisconnected();
     void onClientError(const QString& error);

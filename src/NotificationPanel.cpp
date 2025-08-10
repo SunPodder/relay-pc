@@ -274,14 +274,22 @@ void NotificationPanel::addNotification(const NotificationData& notification)
 
 void NotificationPanel::removeNotification(int notificationId)
 {
+    // Find the notification card and get its string ID for dismiss
+    QString stringId;
     for (int i = 0; i < m_notificationCards.size(); ++i) {
         NotificationCard* card = m_notificationCards[i];
         if (card->getNotificationId() == notificationId) {
+            stringId = card->getNotificationData().stringId;
             m_scrollLayout->removeWidget(card);
             m_notificationCards.removeAt(i);
             card->deleteLater();
             break;
         }
+    }
+    
+    // Notify the notification manager to handle the dismiss (which will send to Android)
+    if (m_notificationManager && !stringId.isEmpty()) {
+        m_notificationManager->removeNotification(notificationId);
     }
     
     updateEmptyState();

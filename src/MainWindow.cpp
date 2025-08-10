@@ -62,6 +62,8 @@ void MainWindow::setupUI()
     // Connect signals
     connect(m_notificationManager, &NotificationManager::notificationReceived,
             m_notificationPanel, &NotificationPanel::addNotification);
+    connect(m_notificationManager, &NotificationManager::notificationRemoved,
+            m_notificationPanel, &NotificationPanel::removeNotification);
     
     // Connect popup manager to show popups for new notifications
     connect(m_notificationManager, &NotificationManager::notificationReceived,

@@ -302,6 +302,7 @@ void NotificationClient::sendConnectionRequest()
     
     connMsg["payload"] = payload;
     
+    Logger::debug("Sending connection request to server: " + QJsonDocument(connMsg).toJson(QJsonDocument::Compact));
     sendMessage(connMsg);
 }
 
@@ -358,20 +359,40 @@ void NotificationClient::handleMessage(const QJsonObject& message)
             }
         }
     }
+    else if (msgType == "notification_action") {
+        if (m_handshakeComplete) {
+            handleNotificationAction(message);
+        }
+    }
     else if (msgType == "ping") {
         Logger::debug(QString("Received ping with ID: %1").arg(message.value("id").toString()));
         handlePing(message);
     }
     else {
-        Logger::warning(QString("Unknown message type: %1").arg(msgType));
+        Logger::warning(QString("Unknown message type: %1, message: %2")
+                .arg(msgType, QJsonDocument(message).toJson(QJsonDocument::Compact)));
     }
 }
 
 void NotificationClient::handlePing(const QJsonObject& message)
 {
     QString pingId = message.value("id").toString();
-    Logger::debug(QString("Sending pong response for ping ID: %1").arg(pingId));
     sendPong(pingId);
+}
+
+void NotificationClient::handleNotificationAction(const QJsonObject& message)
+{
+    QJsonObject payload = message.value("payload").toObject();
+    QString notificationId = payload.value("id").toString();
+    QString actionType = payload.value("type").toString();
+    
+    if (actionType == "notification_dismiss") {
+        Logger::debug(QString("Received dismiss action for notification: %1").arg(notificationId));
+        emit notificationDismissed(notificationId);
+    } else {
+        // Handle other action types if needed in the future
+        Logger::debug(QString("Received notification action type '%1' for notification: %2").arg(actionType, notificationId));
+    }
 }
 
 void NotificationClient::sendPong(const QString& pingId)
@@ -385,6 +406,7 @@ void NotificationClient::sendPong(const QString& pingId)
     payload["device"] = "Relay-PC";
     pongMsg["payload"] = payload;
 
+    Logger::debug("Sending pong to server: " + QJsonDocument(pongMsg).toJson(QJsonDocument::Compact));
     sendMessage(pongMsg);
 }
 
@@ -404,6 +426,7 @@ void NotificationClient::sendNotificationReply(const QString& notificationId, co
     payload["body"] = replyText;
     actionMsg["payload"] = payload;
     
+    Logger::debug("Sending notification reply to server: " + QJsonDocument(actionMsg).toJson(QJsonDocument::Compact));
     sendMessage(actionMsg);
 }
 
@@ -422,6 +445,7 @@ void NotificationClient::sendNotificationAction(const QString& notificationId, c
     payload["type"] = "action";
     actionMsg["payload"] = payload;
     
+    Logger::debug("Sending notification action to server: " + QJsonDocument(actionMsg).toJson(QJsonDocument::Compact));
     sendMessage(actionMsg);
 }
 
@@ -429,16 +453,18 @@ void NotificationClient::sendNotificationDismiss(const QString& notificationId)
 {
     if (!m_handshakeComplete) return;
     
-    QJsonObject dismissMsg;
-    dismissMsg["type"] = "notification_dismiss";
-    dismissMsg["id"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    dismissMsg["timestamp"] = QDateTime::currentSecsSinceEpoch();
+    QJsonObject actionMsg;
+    actionMsg["type"] = "notification_action";
+    actionMsg["id"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    actionMsg["timestamp"] = QDateTime::currentSecsSinceEpoch();
     
     QJsonObject payload;
     payload["id"] = notificationId;
-    dismissMsg["payload"] = payload;
+    payload["type"] = "notification_dismiss";
+    actionMsg["payload"] = payload;
     
-    sendMessage(dismissMsg);
+    Logger::debug("Sending notification dismiss to server: " + QJsonDocument(actionMsg).toJson(QJsonDocument::Compact));
+    sendMessage(actionMsg);
 }
 
 void NotificationClient::onReconnectTimer()

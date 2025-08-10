@@ -38,6 +38,7 @@ signals:
     void connected();
     void disconnected();
     void notificationReceived(const NotificationData& notification);
+    void notificationDismissed(const QString& notificationId); // New signal for incoming dismisses
     void errorOccurred(const QString& error);
     void serverDiscovered(const QHostAddress& address, quint16 port);
 
@@ -57,6 +58,7 @@ private:
     void sendMessage(const QJsonObject& message);
     void handleMessage(const QJsonObject& message);
     void handlePing(const QJsonObject& message);
+    void handleNotificationAction(const QJsonObject& message);
     void sendPong(const QString& pingId);
     NotificationData parseNotificationJson(const QJsonObject& json);
     void startReconnectTimer();

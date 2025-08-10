@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QLineEdit>
 #include <QEnterEvent>
 #include "NotificationData.h"
 
@@ -36,15 +37,21 @@ private slots:
     void onRemoveClicked();
     void onActionButtonClicked();
     void onActionIndicatorClicked();
+    void onSendButtonClicked();
+    void onCancelButtonClicked();
+    void onInputReturnPressed();
 
 private:
     void setupUI();
     void updateTimeLabel();
     void setupActionButtons();
+    void setupInputField();
     void showActions();
     void hideActions();
     void showBodies();
     void hideBodies();
+    void showInput(const QString& actionKey);
+    void hideInput();
     void updateCardHeight();
     
     NotificationData m_notificationData;
@@ -64,9 +71,19 @@ private:
     QHBoxLayout* m_actionButtonsLayout;
     QList<QPushButton*> m_actionButtons;
     
+    // Input field for remote_input actions
+    QWidget* m_inputWidget; // Container for input field and send/cancel buttons
+    QVBoxLayout* m_inputLayout;
+    QLineEdit* m_replyInput;
+    QHBoxLayout* m_inputButtonsLayout;
+    QPushButton* m_sendButton;
+    QPushButton* m_cancelButton;
+    QString m_currentActionKey; // Track which action key the input is for
+    
     bool m_isHovered;
     bool m_actionsVisible;
     bool m_bodiesExpanded;  // Track if we're showing all bodies
+    bool m_inputVisible;    // Track if input field is visible
     
     static constexpr int CARD_MARGIN = 12;
     static constexpr int CARD_SPACING = 8;

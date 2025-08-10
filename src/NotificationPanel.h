@@ -21,6 +21,7 @@ public:
 
     void setupUI();
     void positionPanel();
+    void setNotificationManager(class NotificationManager* manager);
     
 public slots:
     void addNotification(const NotificationData& notification);
@@ -49,6 +50,7 @@ private:
     QPushButton* m_clearButton;
     
     QList<NotificationCard*> m_notificationCards;
+    class NotificationManager* m_notificationManager;
 };
 
 #endif // NOTIFICATIONPANEL_H

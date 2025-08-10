@@ -392,18 +392,19 @@ void NotificationClient::sendNotificationReply(const QString& notificationId, co
 {
     if (!m_handshakeComplete) return;
     
-    QJsonObject replyMsg;
-    replyMsg["type"] = "notification_reply";
-    replyMsg["id"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    replyMsg["timestamp"] = QDateTime::currentSecsSinceEpoch();
+    QJsonObject actionMsg;
+    actionMsg["type"] = "notification_action";
+    actionMsg["id"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    actionMsg["timestamp"] = QDateTime::currentSecsSinceEpoch();
     
     QJsonObject payload;
     payload["id"] = notificationId;
     payload["key"] = actionKey;
+    payload["type"] = "remote_input";
     payload["body"] = replyText;
-    replyMsg["payload"] = payload;
+    actionMsg["payload"] = payload;
     
-    sendMessage(replyMsg);
+    sendMessage(actionMsg);
 }
 
 void NotificationClient::sendNotificationAction(const QString& notificationId, const QString& actionKey)
@@ -418,6 +419,7 @@ void NotificationClient::sendNotificationAction(const QString& notificationId, c
     QJsonObject payload;
     payload["id"] = notificationId;
     payload["key"] = actionKey;
+    payload["type"] = "action";
     actionMsg["payload"] = payload;
     
     sendMessage(actionMsg);

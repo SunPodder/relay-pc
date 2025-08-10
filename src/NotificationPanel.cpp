@@ -1,5 +1,7 @@
 #include "NotificationPanel.h"
 #include "NotificationCard.h"
+#include "NotificationManager.h"
+#include "NotificationClient.h"
 
 #include <QApplication>
 #include <QScreen>
@@ -20,6 +22,7 @@ NotificationPanel::NotificationPanel(QWidget *parent)
     , m_scrollLayout(nullptr)
     , m_emptyLabel(nullptr)
     , m_clearButton(nullptr)
+    , m_notificationManager(nullptr)
 {
     setupUI();
     positionPanel();
@@ -192,6 +195,11 @@ void NotificationPanel::positionPanel()
     }
 }
 
+void NotificationPanel::setNotificationManager(NotificationManager* manager)
+{
+    m_notificationManager = manager;
+}
+
 void NotificationPanel::addNotification(const NotificationData& notification)
 {
     // Hide empty label if visible
@@ -237,6 +245,21 @@ void NotificationPanel::addNotification(const NotificationData& notification)
                 this, [this, card]() {
                     removeNotification(card->getNotificationId());
                 });
+        
+        // Connect action signals to notification client
+        if (m_notificationManager && m_notificationManager->getClient()) {
+            auto client = m_notificationManager->getClient();
+            
+            connect(card, &NotificationCard::actionClicked,
+                    this, [client, card](const QString& actionKey) {
+                        client->sendNotificationAction(card->getNotificationData().stringId, actionKey);
+                    });
+            
+            connect(card, &NotificationCard::replyRequested,
+                    this, [client, card](const QString& actionKey, const QString& replyText) {
+                        client->sendNotificationReply(card->getNotificationData().stringId, actionKey, replyText);
+                    });
+        }
         
         // Insert at the beginning (newest first)
         m_scrollLayout->insertWidget(0, card);

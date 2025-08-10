@@ -50,6 +50,9 @@ void MainWindow::setupUI()
     // Create notification panel
     m_notificationPanel = new NotificationPanel();
     
+    // Set notification manager reference for action handling
+    m_notificationPanel->setNotificationManager(m_notificationManager);
+    
     // Create animation manager
     m_animationManager = new AnimationManager(m_notificationPanel, this);
     

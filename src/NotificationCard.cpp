@@ -24,9 +24,14 @@ NotificationCard::NotificationCard(const NotificationData& notification, QWidget
     , m_actionIndicator(nullptr)
     , m_actionWidget(nullptr)
     , m_actionButtonsLayout(nullptr)
+    , m_inputWidget(nullptr)
+    , m_replyInput(nullptr)
+    , m_sendButton(nullptr)
+    , m_cancelButton(nullptr)
     , m_isHovered(false)
     , m_actionsVisible(false)
     , m_bodiesExpanded(false)
+    , m_inputVisible(false)
 {
     setupUI();
     
@@ -182,6 +187,10 @@ void NotificationCard::setupUI()
     
     // Setup action buttons (initially hidden)
     setupActionButtons();
+    
+    // Setup input field (initially hidden)
+    setupInputField();
+    
     updateGeometry();
 }
 
@@ -280,6 +289,104 @@ void NotificationCard::setupActionButtons()
     m_actionWidget->hide();
 }
 
+void NotificationCard::setupInputField()
+{
+    // Create input widget container
+    m_inputWidget = new QWidget(this);
+    m_inputLayout = new QVBoxLayout(m_inputWidget);
+    m_inputLayout->setContentsMargins(0, 5, 0, 0);
+    m_inputLayout->setSpacing(6);
+    
+    // Create reply input field
+    m_replyInput = new QLineEdit(m_inputWidget);
+    m_replyInput->setPlaceholderText("Type your reply...");
+    m_replyInput->setStyleSheet(
+        "QLineEdit {"
+        "    background-color: rgba(60, 60, 60, 0.8);"
+        "    border: 1px solid rgba(255, 255, 255, 0.2);"
+        "    border-radius: 4px;"
+        "    color: white;"
+        "    font-size: 12px;"
+        "    padding: 6px 8px;"
+        "}"
+        "QLineEdit:focus {"
+        "    border: 1px solid rgba(70, 130, 180, 0.8);"
+        "    background-color: rgba(70, 70, 70, 0.9);"
+        "}"
+    );
+    
+    // Connect return key to send
+    connect(m_replyInput, &QLineEdit::returnPressed, this, &NotificationCard::onInputReturnPressed);
+    
+    m_inputLayout->addWidget(m_replyInput);
+    
+    // Create buttons layout
+    m_inputButtonsLayout = new QHBoxLayout();
+    m_inputButtonsLayout->setSpacing(8);
+    
+    // Create send button
+    m_sendButton = new QPushButton("Send", m_inputWidget);
+    m_sendButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: rgba(70, 130, 180, 0.8);"
+        "    border: 1px solid rgba(255, 255, 255, 0.2);"
+        "    border-radius: 4px;"
+        "    color: white;"
+        "    font-size: 11px;"
+        "    padding: 4px 12px;"
+        "    min-width: 50px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: rgba(70, 130, 180, 1.0);"
+        "    border: 1px solid rgba(255, 255, 255, 0.4);"
+        "}"
+        "QPushButton:pressed {"
+        "    background-color: rgba(50, 110, 160, 1.0);"
+        "}"
+    );
+    
+    // Create cancel button
+    m_cancelButton = new QPushButton("Cancel", m_inputWidget);
+    m_cancelButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: rgba(120, 120, 120, 0.6);"
+        "    border: 1px solid rgba(255, 255, 255, 0.2);"
+        "    border-radius: 4px;"
+        "    color: white;"
+        "    font-size: 11px;"
+        "    padding: 4px 12px;"
+        "    min-width: 50px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: rgba(140, 140, 140, 0.8);"
+        "    border: 1px solid rgba(255, 255, 255, 0.4);"
+        "}"
+        "QPushButton:pressed {"
+        "    background-color: rgba(100, 100, 100, 0.8);"
+        "}"
+    );
+    
+    // Connect button signals
+    connect(m_sendButton, &QPushButton::clicked, this, &NotificationCard::onSendButtonClicked);
+    connect(m_cancelButton, &QPushButton::clicked, this, &NotificationCard::onCancelButtonClicked);
+    
+    // Add buttons to layout
+    m_inputButtonsLayout->addWidget(m_sendButton);
+    m_inputButtonsLayout->addWidget(m_cancelButton);
+    m_inputButtonsLayout->addStretch();
+    
+    // Create buttons container widget
+    QWidget* buttonsWidget = new QWidget(m_inputWidget);
+    buttonsWidget->setLayout(m_inputButtonsLayout);
+    m_inputLayout->addWidget(buttonsWidget);
+    
+    // Add input widget to main layout
+    m_mainLayout->addWidget(m_inputWidget);
+    
+    // Initially hidden
+    m_inputWidget->hide();
+}
+
 void NotificationCard::showActions()
 {
     if (m_actionWidget && !m_notificationData.actions.isEmpty()) {
@@ -318,6 +425,33 @@ void NotificationCard::hideBodies()
     }
 }
 
+void NotificationCard::showInput(const QString& actionKey)
+{
+    if (m_inputWidget) {
+        m_currentActionKey = actionKey;
+        m_replyInput->clear();
+        m_replyInput->setFocus();
+        m_inputWidget->show();
+        m_inputVisible = true;
+        
+        // Hide action buttons when showing input
+        hideActions();
+        
+        updateCardHeight();
+    }
+}
+
+void NotificationCard::hideInput()
+{
+    if (m_inputWidget) {
+        m_inputWidget->hide();
+        m_inputVisible = false;
+        m_currentActionKey.clear();
+        
+        updateCardHeight();
+    }
+}
+
 void NotificationCard::onActionButtonClicked()
 {
     QPushButton* button = qobject_cast<QPushButton*>(sender());
@@ -327,10 +461,10 @@ void NotificationCard::onActionButtonClicked()
     QString actionType = button->property("actionType").toString();
     
     if (actionType == "remote_input") {
-        // For now, emit a signal to handle reply input
-        // In a full implementation, you'd show an input dialog
-        emit replyRequested(actionKey, "Quick reply from desktop");
+        // Show input field for reply
+        showInput(actionKey);
     } else {
+        // Regular action - emit signal immediately
         emit actionClicked(actionKey);
     }
 }
@@ -347,12 +481,32 @@ bool NotificationCard::eventFilter(QObject *obj, QEvent *event)
     return QWidget::eventFilter(obj, event);
 }
 
+void NotificationCard::onSendButtonClicked()
+{
+    QString replyText = m_replyInput->text().trimmed();
+    if (!replyText.isEmpty() && !m_currentActionKey.isEmpty()) {
+        emit replyRequested(m_currentActionKey, replyText);
+        hideInput();
+    }
+}
+
+void NotificationCard::onCancelButtonClicked()
+{
+    hideInput();
+}
+
+void NotificationCard::onInputReturnPressed()
+{
+    onSendButtonClicked();
+}
+
 void NotificationCard::onActionIndicatorClicked()
 {
-    if (m_actionsVisible || m_bodiesExpanded) {
-        // Hide expanded content (actions and/or bodies)
+    if (m_actionsVisible || m_bodiesExpanded || m_inputVisible) {
+        // Hide expanded content (actions, bodies, and/or input)
         hideActions();
         hideBodies();
+        hideInput();
         if (m_actionIndicator) {
             m_actionIndicator->setText("⌄"); // Down arrow
         }
@@ -364,4 +518,11 @@ void NotificationCard::onActionIndicatorClicked()
             m_actionIndicator->setText("⌃"); // Up arrow
         }
     }
+}
+
+void NotificationCard::updateCardHeight()
+{
+    // Let Qt handle the height automatically through layout system
+    updateGeometry();
+    update();
 }
